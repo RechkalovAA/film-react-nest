@@ -6,7 +6,7 @@ import { ScheduleDocument } from './schemas/film.schema';
 
 export interface FilmsRepository {
   findAll(): Promise<FilmsListResponseDto>;
-  findScheduleByFilmId(filmId: string): Promise<ScheduleListResponseDto>;
+  findScheduleByFilmId(filmId: string): Promise<ScheduleListResponseDto | null>;
   findScheduleItem(
     filmId: string,
     sessionId: string,

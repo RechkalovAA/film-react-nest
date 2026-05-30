@@ -13,7 +13,7 @@ export class FilmsMongoDbRepository implements FilmsRepository {
   async findScheduleByFilmId(filmId: string) {
     const doc = await FilmModel.findOne({ id: filmId }).lean();
     if (!doc) {
-      return { total: 0, items: [] };
+      return null;
     }
     return toScheduleListResponse(doc.schedule);
   }

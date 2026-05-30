@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { FilmsListResponseDto, ScheduleListResponseDto } from './dto/films.dto';
 import {
   FILMS_REPOSITORY,
@@ -16,7 +16,16 @@ export class FilmsService {
     return this.filmsRepository.findAll();
   }
 
-  findSchedule(id: string): Promise<ScheduleListResponseDto> {
-    return this.filmsRepository.findScheduleByFilmId(id);
+  async findSchedule(id: string): Promise<ScheduleListResponseDto> {
+    const schedule = await this.filmsRepository.findScheduleByFilmId(id);
+
+    if (!schedule) {
+      throw new HttpException(
+        { error: 'Film not found' },
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    return schedule;
   }
 }
