@@ -9,7 +9,6 @@ import {
   toScheduleListResponse,
 } from './film.mapper';
 import { FilmsRepository } from './films.repository.interface';
-import { parseTaken, serializeTaken } from './taken.util';
 
 @Injectable()
 export class FilmsTypeOrmRepository implements FilmsRepository {
@@ -60,8 +59,8 @@ export class FilmsTypeOrmRepository implements FilmsRepository {
       return;
     }
 
-    const taken = new Set([...parseTaken(schedule.taken), ...seatKeys]);
-    schedule.taken = serializeTaken([...taken]);
+    const taken = new Set([...(schedule.taken ?? []), ...seatKeys]);
+    schedule.taken = [...taken];
     await this.scheduleRepository.save(schedule);
   }
 }

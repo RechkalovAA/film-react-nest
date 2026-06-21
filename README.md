@@ -36,7 +36,9 @@ npm run start:dev
 В `.env` укажите:
 
 - `DATABASE_DRIVER` — `postgres`
-- `DATABASE_URL` — строка подключения, например `postgres://prac:prac@localhost:5432/prac`
+- `DATABASE_HOST` — хост PostgreSQL, например `localhost`
+- `DATABASE_PORT` — порт PostgreSQL, например `5432`
+- `DATABASE_NAME` — имя базы данных, например `prac`
 - `DATABASE_USERNAME` — имя пользователя БД
 - `DATABASE_PASSWORD` — пароль пользователя БД
 

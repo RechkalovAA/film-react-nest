@@ -6,29 +6,13 @@ import {
 } from '../films/dto/films.dto';
 import { Film } from './entities/film.entity';
 import { Schedule } from './entities/schedule.entity';
-import { parseTaken } from './taken.util';
-
-function parseTags(tags: string): string[] {
-  if (!tags) {
-    return [];
-  }
-
-  if (tags.includes(',')) {
-    return tags
-      .split(',')
-      .map((tag) => tag.trim())
-      .filter(Boolean);
-  }
-
-  return [tags];
-}
 
 export function toFilmDto(film: Film): FilmDto {
   return {
     id: film.id,
     rating: film.rating,
     director: film.director,
-    tags: parseTags(film.tags),
+    tags: film.tags ?? [],
     image: film.image,
     cover: film.cover,
     title: film.title,
@@ -45,7 +29,7 @@ export function toScheduleDto(schedule: Schedule): ScheduleDto {
     rows: schedule.rows,
     seats: schedule.seats,
     price: schedule.price,
-    taken: parseTaken(schedule.taken),
+    taken: schedule.taken ?? [],
   };
 }
 

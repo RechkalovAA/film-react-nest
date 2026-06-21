@@ -23,21 +23,21 @@ import { FilmsTypeOrmRepository } from './repository/films.typeorm.repository';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        const username = configService.get<string>('DATABASE_USERNAME', 'prac');
-        const password = configService.get<string>('DATABASE_PASSWORD', 'prac');
-        const databaseUrl = configService.get<string>(
-          'DATABASE_URL',
-          'postgres://localhost:5432/prac',
-        );
+        const driver = configService.get<string>('DATABASE_DRIVER', 'postgres');
+
+        if (driver !== 'postgres') {
+          throw new Error(
+            `Unsupported DATABASE_DRIVER: ${driver}. Expected postgres.`,
+          );
+        }
 
         return {
-          type: 'postgres' as const,
-          url: databaseUrl.includes('@')
-            ? databaseUrl
-            : databaseUrl.replace(
-                'postgres://',
-                `postgres://${username}:${password}@`,
-              ),
+          type: driver as 'postgres',
+          host: configService.get<string>('DATABASE_HOST', 'localhost'),
+          port: configService.get<number>('DATABASE_PORT', 5432),
+          username: configService.get<string>('DATABASE_USERNAME', 'prac'),
+          password: configService.get<string>('DATABASE_PASSWORD', 'prac'),
+          database: configService.get<string>('DATABASE_NAME', 'prac'),
           entities: [Film, Schedule],
           synchronize: false,
         };
