@@ -4,23 +4,40 @@ import {
   ScheduleDto,
   ScheduleListResponseDto,
 } from '../films/dto/films.dto';
-import { FilmDocument, ScheduleDocument } from './schemas/film.schema';
+import { Film } from './entities/film.entity';
+import { Schedule } from './entities/schedule.entity';
+import { parseTaken } from './taken.util';
 
-export function toFilmDto(doc: FilmDocument): FilmDto {
+function parseTags(tags: string): string[] {
+  if (!tags) {
+    return [];
+  }
+
+  if (tags.includes(',')) {
+    return tags
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter(Boolean);
+  }
+
+  return [tags];
+}
+
+export function toFilmDto(film: Film): FilmDto {
   return {
-    id: doc.id,
-    rating: doc.rating,
-    director: doc.director,
-    tags: doc.tags,
-    image: doc.image,
-    cover: doc.cover,
-    title: doc.title,
-    about: doc.about,
-    description: doc.description,
+    id: film.id,
+    rating: film.rating,
+    director: film.director,
+    tags: parseTags(film.tags),
+    image: film.image,
+    cover: film.cover,
+    title: film.title,
+    about: film.about,
+    description: film.description,
   };
 }
 
-export function toScheduleDto(schedule: ScheduleDocument): ScheduleDto {
+export function toScheduleDto(schedule: Schedule): ScheduleDto {
   return {
     id: schedule.id,
     daytime: schedule.daytime,
@@ -28,21 +45,19 @@ export function toScheduleDto(schedule: ScheduleDocument): ScheduleDto {
     rows: schedule.rows,
     seats: schedule.seats,
     price: schedule.price,
-    taken: schedule.taken,
+    taken: parseTaken(schedule.taken),
   };
 }
 
-export function toFilmsListResponse(
-  docs: FilmDocument[],
-): FilmsListResponseDto {
+export function toFilmsListResponse(films: Film[]): FilmsListResponseDto {
   return {
-    total: docs.length,
-    items: docs.map(toFilmDto),
+    total: films.length,
+    items: films.map(toFilmDto),
   };
 }
 
 export function toScheduleListResponse(
-  schedules: ScheduleDocument[],
+  schedules: Schedule[],
 ): ScheduleListResponseDto {
   return {
     total: schedules.length,

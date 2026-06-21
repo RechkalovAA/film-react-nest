@@ -1,36 +1,86 @@
 # FILM!
 
+Онлайн-сервис бронирования билетов в кинотеатр. Frontend — React, backend — Nest.js, база данных — PostgreSQL + TypeORM.
+
 ## Установка
 
-### MongoDB
+### PostgreSQL
 
-Установите MongoDB скачав дистрибутив с официального сайта или с помощью пакетного менеджера вашей ОС. Также можно воспользоваться Docker (см. ветку `feat/docker`.
+Установите PostgreSQL с [официального сайта](https://www.postgresql.org/download/) или через пакетный менеджер ОС.
 
-Выполните скрипт `test/mongodb_initial_stub.js` в консоли `mongo`.
+Создайте пользователя и базу (если ещё не созданы), затем выполните SQL-скрипты из `backend/test/`:
 
-### Бэкенд
+```bash
+# от суперпользователя — создать пользователя prac и БД prac
+psql -U postgres -d postgres -c "CREATE USER prac WITH PASSWORD 'prac';"
+psql -U postgres -d postgres -c "CREATE DATABASE prac OWNER prac;"
 
-Перейдите в папку с исходным кодом бэкенда
+# расширение и таблицы
+psql -U postgres -d prac -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'
+tail -n +6 backend/test/prac.init.sql | psql -U postgres -d prac
 
-`cd backend`
+# тестовые данные
+psql -U prac -d prac -f backend/test/prac.films.sql
+psql -U prac -d prac -f backend/test/prac.shedules.sql
+```
 
-Установите зависимости (точно такие же, как в package-lock.json) помощью команд
+### Backend
 
-`npm ci` или `yarn install --frozen-lockfile`
+```bash
+cd backend
+npm ci
+cp .env.example .env
+npm run start:dev
+```
 
-Создайте `.env` файл из примера `.env.example`, в нём укажите:
+В `.env` укажите:
 
-* `DATABASE_DRIVER` - тип драйвера СУБД - в нашем случае это `mongodb` 
-* `DATABASE_URL` - адрес СУБД MongoDB, например `mongodb://127.0.0.1:27017/practicum`.  
+- `DATABASE_DRIVER` — `postgres`
+- `DATABASE_URL` — строка подключения, например `postgres://prac:prac@localhost:5432/prac`
+- `DATABASE_USERNAME` — имя пользователя БД
+- `DATABASE_PASSWORD` — пароль пользователя БД
 
-MongoDB должна быть установлена и запущена.
+Backend запускается на порту **3000**, API доступен по префиксу `/api/afisha`.
 
-Запустите бэкенд:
+### Frontend
 
-`npm start:debug`
+```bash
+cd frontend
+npm ci
+cp .env.example .env
+npm run dev
+```
 
-Для проверки отправьте тестовый запрос с помощью Postman или `curl`.
+Для локальной разработки в `.env`:
 
+```
+VITE_API_URL=http://localhost:3000/api/afisha
+VITE_CDN_URL=http://localhost:3000/content/afisha
+```
 
+Frontend запускается на порту **5173**.
 
+## API
 
+Описание API — в файле [`film.yml`](film.yml).
+
+Основные эндпоинты:
+
+- `GET /api/afisha/films` — список фильмов
+- `GET /api/afisha/films/:id/schedule` — расписание сеансов
+- `POST /api/afisha/order` — бронирование билетов
+- `GET /content/afisha/*` — статический контент (постеры)
+
+## Проверка
+
+```bash
+cd backend
+npm run lint
+npm run build
+```
+
+Тестовый запрос:
+
+```bash
+curl http://localhost:3000/api/afisha/films/
+```
