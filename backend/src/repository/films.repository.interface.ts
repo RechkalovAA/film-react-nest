@@ -1,8 +1,8 @@
 import {
   FilmsListResponseDto,
+  ScheduleDto,
   ScheduleListResponseDto,
 } from '../films/dto/films.dto';
-import { ScheduleDocument } from './schemas/film.schema';
 
 export interface FilmsRepository {
   findAll(): Promise<FilmsListResponseDto>;
@@ -10,7 +10,7 @@ export interface FilmsRepository {
   findScheduleItem(
     filmId: string,
     sessionId: string,
-  ): Promise<ScheduleDocument | null>;
+  ): Promise<ScheduleDto | null>;
   addTakenSeats(
     filmId: string,
     sessionId: string,

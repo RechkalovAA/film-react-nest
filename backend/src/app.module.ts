@@ -1,16 +1,17 @@
 import { Module } from '@nestjs/common';
 import { ServeStaticModule } from '@nestjs/serve-static';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import * as path from 'node:path';
 
-import { configProvider } from './app.config.provider';
-import { databaseProvider } from './database/database.provider';
 import { FilmsController } from './films/films.controller';
 import { FilmsService } from './films/films.service';
 import { OrderController } from './order/order.controller';
 import { OrderService } from './order/order.service';
+import { Film } from './repository/entities/film.entity';
+import { Schedule } from './repository/entities/schedule.entity';
 import { FILMS_REPOSITORY } from './repository/films.repository.interface';
-import { FilmsMongoDbRepository } from './repository/films.mongodb.repository';
+import { FilmsTypeOrmRepository } from './repository/films.typeorm.repository';
 
 @Module({
   imports: [
@@ -18,6 +19,31 @@ import { FilmsMongoDbRepository } from './repository/films.mongodb.repository';
       isGlobal: true,
       cache: true,
     }),
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        const driver = configService.get<string>('DATABASE_DRIVER', 'postgres');
+
+        if (driver !== 'postgres') {
+          throw new Error(
+            `Unsupported DATABASE_DRIVER: ${driver}. Expected postgres.`,
+          );
+        }
+
+        return {
+          type: driver as 'postgres',
+          host: configService.get<string>('DATABASE_HOST', 'localhost'),
+          port: configService.get<number>('DATABASE_PORT', 5432),
+          username: configService.get<string>('DATABASE_USERNAME', 'prac'),
+          password: configService.get<string>('DATABASE_PASSWORD', 'prac'),
+          database: configService.get<string>('DATABASE_NAME', 'prac'),
+          entities: [Film, Schedule],
+          synchronize: false,
+        };
+      },
+    }),
+    TypeOrmModule.forFeature([Film, Schedule]),
     ServeStaticModule.forRoot({
       rootPath: path.join(__dirname, '..', 'public', 'content', 'afisha'),
       serveRoot: '/content/afisha',
@@ -25,13 +51,11 @@ import { FilmsMongoDbRepository } from './repository/films.mongodb.repository';
   ],
   controllers: [FilmsController, OrderController],
   providers: [
-    configProvider,
-    databaseProvider,
     FilmsService,
     OrderService,
     {
       provide: FILMS_REPOSITORY,
-      useClass: FilmsMongoDbRepository,
+      useClass: FilmsTypeOrmRepository,
     },
   ],
 })
