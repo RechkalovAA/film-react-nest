@@ -25,6 +25,20 @@ jobs:
       run: bash $DIR_TESTS/bin/backend.sh
   test_endpoints:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: prac
+          POSTGRES_PASSWORD: prac
+          POSTGRES_DB: prac
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U prac -d prac"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
     - name: Set up GitHub Actions
       uses: actions/checkout@v4
@@ -35,6 +49,16 @@ jobs:
     - name: Get testing lib
       run: set -eu && git clone --depth 1 $REP_TESTS $DIR_TESTS
     - name: Start project
-      run: bash $DIR_TESTS/bin/start_project.sh
+      run: |
+        set -eu
+        cp backend/.env.example backend/.env
+        sudo apt-get update -qq && sudo apt-get install -y postgresql-client > /dev/null
+        psql "postgresql://prac:prac@localhost:5432/prac" -f backend/test/prac.init.sql || true
+        psql "postgresql://prac:prac@localhost:5432/prac" -f backend/test/prac.films.sql
+        psql "postgresql://prac:prac@localhost:5432/prac" -f backend/test/prac.shedules.sql
+        cd backend
+        npm ci
+        npm run build
+        npm run start:prod &
     - name: Run tests
       run: bash $DIR_TESTS/bin/endpoints.sh
