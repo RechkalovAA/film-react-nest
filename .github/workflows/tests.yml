@@ -42,10 +42,10 @@ jobs:
     steps:
     - name: Set up GitHub Actions
       uses: actions/checkout@v4
-    - name: Use Node.js 18.x
+    - name: Use Node.js 20.x
       uses: actions/setup-node@v4
       with:
-        node-version: 18.x
+        node-version: 20.x
     - name: Get testing lib
       run: set -eu && git clone --depth 1 $REP_TESTS $DIR_TESTS
     - name: Start project and run tests
@@ -59,6 +59,26 @@ jobs:
         cd backend
         npm ci
         npm run build
-        nohup npm run start:prod > /tmp/backend.log 2>&1 &
+        node dist/main.js > /tmp/backend.log 2>&1 &
+        BACKEND_PID=$!
+        trap 'kill "$BACKEND_PID" 2>/dev/null || true' EXIT
+        echo "Waiting for backend..."
+        for i in $(seq 1 60); do
+          if ! kill -0 "$BACKEND_PID" 2>/dev/null; then
+            echo "Backend process stopped:"
+            cat /tmp/backend.log
+            exit 1
+          fi
+          if curl -sf http://localhost:3000/api/afisha/films > /dev/null; then
+            echo "Backend is up"
+            break
+          fi
+          sleep 2
+        done
+        curl -sf http://localhost:3000/api/afisha/films > /dev/null || {
+          echo "Backend failed to start:"
+          cat /tmp/backend.log
+          exit 1
+        }
         cd "$GITHUB_WORKSPACE"
         bash $DIR_TESTS/bin/endpoints.sh
