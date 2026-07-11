@@ -48,7 +48,7 @@ jobs:
         node-version: 18.x
     - name: Get testing lib
       run: set -eu && git clone --depth 1 $REP_TESTS $DIR_TESTS
-    - name: Start project
+    - name: Start project and run tests
       run: |
         set -eu
         cp backend/.env.example backend/.env
@@ -59,6 +59,6 @@ jobs:
         cd backend
         npm ci
         npm run build
-        npm run start:prod &
-    - name: Run tests
-      run: bash $DIR_TESTS/bin/endpoints.sh
+        nohup npm run start:prod > /tmp/backend.log 2>&1 &
+        cd "$GITHUB_WORKSPACE"
+        bash $DIR_TESTS/bin/endpoints.sh
