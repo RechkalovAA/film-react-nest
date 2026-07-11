@@ -1,0 +1,14 @@
+node_modules/
+dist/
+build/
+.env
+.env.*
+!.env.example
+Dockerfile
+docker-compose*.yml
+.git
+.idea
+.storybook
+bin/
+*.md
+src/stories/

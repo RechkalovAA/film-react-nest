@@ -25,16 +25,61 @@ jobs:
       run: bash $DIR_TESTS/bin/backend.sh
   test_endpoints:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: prac
+          POSTGRES_PASSWORD: prac
+          POSTGRES_DB: prac
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U prac -d prac"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
     - name: Set up GitHub Actions
       uses: actions/checkout@v4
-    - name: Use Node.js 18.x
+    - name: Use Node.js 20.x
       uses: actions/setup-node@v4
       with:
-        node-version: 18.x
+        node-version: 20.x
     - name: Get testing lib
       run: set -eu && git clone --depth 1 $REP_TESTS $DIR_TESTS
-    - name: Start project
-      run: bash $DIR_TESTS/bin/start_project.sh
-    - name: Run tests
-      run: bash $DIR_TESTS/bin/endpoints.sh
+    - name: Start project and run tests
+      run: |
+        set -eu
+        cp backend/.env.example backend/.env
+        sudo apt-get update -qq && sudo apt-get install -y postgresql-client > /dev/null
+        psql "postgresql://prac:prac@localhost:5432/prac" -f backend/test/prac.init.sql || true
+        psql "postgresql://prac:prac@localhost:5432/prac" -f backend/test/prac.films.sql
+        psql "postgresql://prac:prac@localhost:5432/prac" -f backend/test/prac.shedules.sql
+        cd backend
+        npm ci
+        npm run build
+        node dist/main.js > /tmp/backend.log 2>&1 &
+        BACKEND_PID=$!
+        trap 'kill "$BACKEND_PID" 2>/dev/null || true' EXIT
+        echo "Waiting for backend..."
+        for i in $(seq 1 60); do
+          if ! kill -0 "$BACKEND_PID" 2>/dev/null; then
+            echo "Backend process stopped:"
+            cat /tmp/backend.log
+            exit 1
+          fi
+          if curl -sf http://127.0.0.1:3000/api/afisha/films > /dev/null; then
+            echo "Backend is up"
+            break
+          fi
+          sleep 2
+        done
+        curl -sf http://127.0.0.1:3000/api/afisha/films > /dev/null || {
+          echo "Backend failed to start:"
+          cat /tmp/backend.log
+          exit 1
+        }
+        cd "$GITHUB_WORKSPACE"
+        sed -i 's|http://localhost:3000|http://127.0.0.1:3000|g' "$DIR_TESTS/collections/sprint-14.json"
+        bash $DIR_TESTS/bin/endpoints.sh

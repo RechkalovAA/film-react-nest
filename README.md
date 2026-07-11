@@ -62,6 +62,21 @@ VITE_CDN_URL=http://localhost:3000/content/afisha
 
 Frontend запускается на порту **5173**.
 
+## Docker
+
+```bash
+cp .env.example .env
+docker compose up -d --build
+```
+
+Приложение доступно на порту **80**, pgAdmin — на **8080**.
+
+Переменные окружения для compose — в [`.env.example`](.env.example).
+
+## Деплой
+
+Приложение доступно по адресу: https://film-rechkalov.nomorepartiessite.ru
+
 ## API
 
 Описание API — в файле [`film.yml`](film.yml).
@@ -78,6 +93,7 @@ Frontend запускается на порту **5173**.
 ```bash
 cd backend
 npm run lint
+npm test
 npm run build
 ```
 
