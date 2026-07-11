@@ -1,0 +1,84 @@
+services:
+  database:
+    image: postgres:16-alpine
+    restart: always
+    env_file: .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - webnet
+
+  backend:
+    build:
+      context: ./backend
+    image: ghcr.io/rechkalovaa/film-backend:latest
+    restart: always
+    env_file: .env
+    depends_on:
+      - database
+    networks:
+      - webnet
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: ${VITE_API_URL}
+        VITE_CDN_URL: ${VITE_CDN_URL}
+    image: ghcr.io/rechkalovaa/film-frontend:latest
+    restart: always
+    volumes:
+      - frontend_dist:/output
+    networks:
+      - webnet
+
+  nginx:
+    build:
+      context: ./nginx
+    image: ghcr.io/rechkalovaa/film-nginx:latest
+    restart: always
+    ports:
+      - '80:80'
+    depends_on:
+      - backend
+      - frontend
+    volumes:
+      - frontend_dist:/usr/share/nginx/html:ro
+      - certbot_www:/var/www/certbot:ro
+      - certbot_conf:/etc/letsencrypt:ro
+    networks:
+      - webnet
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    restart: always
+    env_file: .env
+    ports:
+      - '8080:80'
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - webnet
+
+  certbot:
+    image: certbot/certbot:latest
+    volumes:
+      - certbot_www:/var/www/certbot
+      - certbot_conf:/etc/letsencrypt
+    entrypoint: /bin/sh -c "trap exit TERM; while :; do sleep 12h & wait $${!}; done"
+    networks:
+      - webnet
+
+networks:
+  webnet:
+
+volumes:
+  postgres_data:
+  pgadmin_data:
+  frontend_dist:
+  certbot_www:
+  certbot_conf:
